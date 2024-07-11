@@ -5,7 +5,7 @@ import tensorflow as tf
 from models.cnn_abstract import ModelCNNAbstract
 
 def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.1)
+    initial = tf.random.truncated_normal(shape, stddev=0.1)
     return tf.Variable(initial)
 
 def bias_variable(shape):
@@ -13,10 +13,10 @@ def bias_variable(shape):
     return tf.Variable(initial)
 
 def conv2d(x, W):
-    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+    return tf.nn.conv2d(x, filters=W, strides=[1, 1, 1, 1], padding='SAME')
 
 def max_pool_2x2(x):
-    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+    return tf.nn.max_pool2d(input=x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
 
 class ModelCNNCifar10(ModelCNNAbstract):
@@ -25,8 +25,8 @@ class ModelCNNCifar10(ModelCNNAbstract):
         pass
 
     def create_graph(self, learning_rate=None):
-        self.x = tf.placeholder(tf.float32, shape=[None, 3072])
-        self.y_ = tf.placeholder(tf.float32, shape=[None, 10])
+        self.x = tf.compat.v1.placeholder(tf.float32, shape=[None, 3072])
+        self.y_ = tf.compat.v1.placeholder(tf.float32, shape=[None, 10])
         self.x_image = tf.reshape(self.x, [-1, 32, 32, 3])
         self.W_conv1 = weight_variable([5, 5, 3, 32])
         self.b_conv1 = bias_variable([32])
@@ -46,7 +46,7 @@ class ModelCNNCifar10(ModelCNNAbstract):
         self.h_pool2_flat = tf.reshape(self.h_pool2, [-1, 8 * 8 * 32])
         self.h_fc1 = tf.nn.relu(tf.matmul(self.h_pool2_flat, self.W_fc1) + self.b_fc1)
         self.y = tf.nn.softmax(tf.matmul(self.h_fc1, self.W_fc2) + self.b_fc2)
-        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y_ * tf.log(self.y), reduction_indices=[1]))
+        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y_ * tf.math.log(self.y), axis=[1]))
 
         self.all_weights = [self.W_conv1, self.b_conv1, self.W_conv2, self.b_conv2,
                             self.W_fc1, self.b_fc1, self.W_fc2, self.b_fc2]

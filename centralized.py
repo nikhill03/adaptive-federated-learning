@@ -5,6 +5,7 @@ from data_reader.data_reader import get_data
 from models.get_model import get_model
 from statistic.collect_stat import CollectStatistics
 from util.sampling import MinibatchSampling
+from util.utils import logger as logger
 
 # Configurations are in a separate config.py file
 from config import *
@@ -49,7 +50,7 @@ for sim in sim_runs:
     w_min_loss = None
     loss_min = np.inf
 
-    print('Start learning')
+    logger.info('Start learning')
 
     total_time = 0      # Actual total time, where use_fixed_averaging_slots has no effect
     total_time_recomputed = 0  # Recomputed total time using estimated time for each local and global update,
@@ -69,23 +70,23 @@ for sim in sim_runs:
         w = w - step_size * grad
 
         if True in np.isnan(w):
-            print('*** w_global is NaN, using previous value')
+            logger.info('*** w_global is NaN, using previous value')
             w = w_prev   # If current w_global contains NaN value, use previous w_global
 
             if use_min_loss:
                 loss_latest = model.loss(train_image, train_label, w, train_indices)
-                print('*** Loss computed from data')
+                logger.info('*** Loss computed from data')
         else:
             if use_min_loss:
                 try:
                     # Note: This has to follow the gradient computation line above
                     loss_latest = model.loss_from_prev_gradient_computation()
-                    print('*** Loss computed from previous gradient computation')
+                    logger.info('*** Loss computed from previous gradient computation')
                 except:
                     # Will get an exception if the model does not support computing loss
                     # from previous gradient computation
                     loss_latest = model.loss(train_image, train_label, w, train_indices)
-                    print('*** Loss computed from data')
+                    logger.info('*** Loss computed from data')
 
         if use_min_loss:
             if (batch_size < total_data) and (w_min_loss is not None):
@@ -96,15 +97,15 @@ for sim in sim_runs:
                 loss_min = loss_latest
                 w_min_loss = w
 
-            print("Loss of latest weight value: " + str(loss_latest))
-            print("Minimum loss: " + str(loss_min))
+            logger.info(f'Loss of latest weight value: {loss_latest}')
+            logger.info(f'Minimum loss: {loss_min}')
 
         # Calculate time
         time_total_all_end = time.time()
         time_total_all = time_total_all_end - time_total_all_start
         time_one_iteration_all = max(0.0, time_total_all)
 
-        print('Time for one local iteration:', time_one_iteration_all)
+        logger.info(f'Time for one local iteration: {time_one_iteration_all}')
 
         if use_fixed_averaging_slots:
             it_each_local = max(0.00000001, time_gen.get_local(1)[0])

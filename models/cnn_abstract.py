@@ -36,21 +36,21 @@ class ModelCNNAbstract(abc.ABC):
         if learning_rate is None:
             learning_rate = 0.0   # The learning rate should not have effect when not using optimizer
         self.learning_rate = learning_rate
-        self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+        self.optimizer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=learning_rate)
         self.optimizer_op = self.optimizer.minimize(self.cross_entropy)
 
     def _assignment_init(self):
-        self.init = tf.global_variables_initializer()
+        self.init = tf.compat.v1.global_variables_initializer()
 
         self.all_assignment_placeholders = []
         self.all_assignment_operations = []
         for w in self.all_weights:
-            p = tf.placeholder(tf.float32, shape=w.get_shape())
+            p = tf.compat.v1.placeholder(tf.float32, shape=w.get_shape())
             self.all_assignment_placeholders.append(p)
             self.all_assignment_operations.append(w.assign(p))
 
     def _session_init(self):
-        self.session = tf.Session()
+        self.session = tf.compat.v1.Session()
 
     def get_weight_dimension(self, imgs, labels):
         if not self.graph_created:
@@ -62,7 +62,7 @@ class ModelCNNAbstract(abc.ABC):
             tmp = 1
             l = weight.get_shape()
             for i in range(0, len(l)):
-                tmp *= l[i].value
+                tmp *= l[i]
 
             dim += tmp
 
@@ -75,8 +75,8 @@ class ModelCNNAbstract(abc.ABC):
         if rand_seed is not None:
             # Random seed only works at graph initialization, so recreate graph here
             self.session.close()
-            tf.reset_default_graph()
-            tf.set_random_seed(rand_seed)
+            tf.compat.v1.reset_default_graph()
+            tf.compat.v1.set_random_seed(rand_seed)
             self.create_graph(learning_rate=self.learning_rate)  # This creates the session as well
 
         self.session.run(self.init)
@@ -99,7 +99,7 @@ class ModelCNNAbstract(abc.ABC):
             tmp = 1
             l = weight.get_shape()
             for i in range(0, len(l)):
-                tmp *= l[i].value
+                tmp *= l[i]
 
             weight_var = np.reshape(w[start_index : start_index+tmp], l)
             sess.run(self.all_assignment_operations[k], feed_dict={self.all_assignment_placeholders[k]: weight_var})

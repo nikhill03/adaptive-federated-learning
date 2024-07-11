@@ -3,6 +3,7 @@ import numpy as np
 from numpy import linalg
 from util.utils import recv_msg, send_msg, moving_average
 from config import tau_max
+from util.utils import logger as logger
 
 
 class ControlAlgAdaptiveTauServer:
@@ -71,9 +72,9 @@ class ControlAlgAdaptiveTauServer:
             self.delta_adapt_mvaverage = moving_average(self.delta_adapt_mvaverage, delta_adapt, self.moving_average_holding_param)
             self.rho_adapt_mvaverage = moving_average(self.rho_adapt_mvaverage, rho_adapt, self.moving_average_holding_param)
 
-            print('betaAdapt_mvaverage =', self.beta_adapt_mvaverage)
-            print('deltaAdapt_mvaverage =', self.delta_adapt_mvaverage)
-            print('rhoAdapt_mvaverage =', self.rho_adapt_mvaverage)
+            logger.info(f'betaAdapt_mvaverage = {self.beta_adapt_mvaverage}')
+            logger.info(f'deltaAdapt_mvaverage = {self.delta_adapt_mvaverage}')
+            logger.info(f'rhoAdapt_mvaverage = {self.rho_adapt_mvaverage}')
 
             # Find tau if using control algorithm
             if self.is_adapt_local:
@@ -163,7 +164,7 @@ class ControlAlgAdaptiveTauClient:
             if np.isnan(self.rho_adapt):
                 self.rho_adapt = 0
 
-            print('betaAdapt =', self.beta_adapt)
+            logger.info(f'betaAdapt = {self.beta_adapt}')
 
             self.control_param_computed = True
 

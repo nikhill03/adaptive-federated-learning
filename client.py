@@ -1,12 +1,13 @@
 import socket
 import time
 import struct
-
+import tensorflow as tf
 from control_algorithm.adaptive_tau import ControlAlgAdaptiveTauClient, ControlAlgAdaptiveTauServer
 from data_reader.data_reader import get_data, get_data_train_samples
 from models.get_model import get_model
 from util.sampling import MinibatchSampling
 from util.utils import send_msg, recv_msg
+from util.utils import logger as logger
 
 # Configurations are in a separate config.py file
 from config import SERVER_ADDR, SERVER_PORT, dataset_file_path
@@ -14,7 +15,7 @@ from config import SERVER_ADDR, SERVER_PORT, dataset_file_path
 sock = socket.socket()
 sock.connect((SERVER_ADDR, SERVER_PORT))
 
-print('---------------------------------------------------------------------------')
+logger.info('---------------------------------------------------------------------------')
 
 batch_size_prev = None
 total_data_prev = None
@@ -42,6 +43,7 @@ try:
         model2 = get_model(model_name)   # Used for computing loss_w_prev_min_loss for stochastic gradient descent,
                                          # so that the state of model can be still used by control algorithm later.
 
+        tf.compat.v1.disable_eager_execution()
         if hasattr(model, 'create_graph'):
             model.create_graph(learning_rate=step_size)
         if hasattr(model2, 'create_graph'):
@@ -50,7 +52,7 @@ try:
         # Assume the dataset does not change
         if read_all_data_for_stochastic or batch_size >= total_data:
             if batch_size_prev != batch_size or total_data_prev != total_data or (batch_size >= total_data and sim_prev != sim):
-                print('Reading all data samples used in training...')
+                logger.info('Reading all data samples used in training...')
                 train_image, train_label, _, _, _ = get_data(dataset, total_data, dataset_file_path, sim_round=sim)
 
         batch_size_prev = batch_size
@@ -80,7 +82,7 @@ try:
         send_msg(sock, msg)
 
         while True:
-            print('---------------------------------------------------------------------------')
+            logger.info('---------------------------------------------------------------------------')
 
             msg = recv_msg(sock, 'MSG_WEIGHT_TAU_SERVER_TO_CLIENT')
             # ['MSG_WEIGHT_TAU_SERVER_TO_CLIENT', w_global, tau, is_last_round, prev_loss_is_min]
@@ -140,12 +142,12 @@ try:
                     try:
                         # Note: This has to follow the gradient computation line above
                         loss_last_global = model.loss_from_prev_gradient_computation()
-                        print('*** Loss computed from previous gradient computation')
+                        logger.info('*** Loss computed from previous gradient computation')
                     except:
                         # Will get an exception if the model does not support computing loss
                         # from previous gradient computation
                         loss_last_global = model.loss(train_image, train_label, w, train_indices)
-                        print('*** Loss computed from data')
+                        logger.info('*** Loss computed from data')
 
                     w_last_global = w
 
@@ -168,7 +170,7 @@ try:
             # Local operation finished, global aggregation starts
             time_local_end = time.time()
             time_all_local = time_local_end - time_local_start
-            print('time_all_local =', time_all_local)
+            logger.info(f'time_all_local = {time_all_local}')
 
             if control_alg is not None:
                 control_alg.update_after_all_local(model, train_image, train_label, train_indices,
@@ -185,5 +187,5 @@ try:
                 break
 
 except (struct.error, socket.error):
-    print('Server has stopped')
+    logger.info('Server has stopped')
     pass

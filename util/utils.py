@@ -1,6 +1,18 @@
 import numpy as np
+import os
 import pickle, struct, socket, math
+import logging
 
+# get TF logger
+logger = logging.getLogger('tensorflow')
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter('[%(asctime)s] %(levelname)s {%(filename)s:%(lineno)d} - %(message)s','%Y-%m-%d:%H:%M:%S')
+
+# create file handler which logs even debug messages
+fh = logging.FileHandler(f'{os.getenv("FL_ROLE")}.log')
+fh.setLevel(logging.INFO)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 def get_even_odd_from_one_hot_label(label):
     for i in range(0, len(label)):
@@ -29,14 +41,14 @@ def send_msg(sock, msg):
     msg_pickle = pickle.dumps(msg)
     sock.sendall(struct.pack(">I", len(msg_pickle)))
     sock.sendall(msg_pickle)
-    print(msg[0], 'sent to', sock.getpeername())
+    logging.info(msg[0], 'sent to', sock.getpeername())
 
 
 def recv_msg(sock, expect_msg_type=None):
     msg_len = struct.unpack(">I", sock.recv(4))[0]
     msg = sock.recv(msg_len, socket.MSG_WAITALL)
     msg = pickle.loads(msg)
-    print(msg[0], 'received from', sock.getpeername())
+    logging.info(msg[0], 'received from', sock.getpeername())
 
     if (expect_msg_type is not None) and (msg[0] != expect_msg_type):
         raise Exception("Expected " + expect_msg_type + " but received " + msg[0])
