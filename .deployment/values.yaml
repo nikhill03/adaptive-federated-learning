@@ -2,3 +2,16 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+imageName: hoangtuansu/rapp_tp:0.5
+namespace: ets-admin
+bootstrap_url: http://10.180.113.114:8080
+clients:
+  - name: client1
+    cells: '1001,1002'
+    port: 31908
+  - name: client2
+    cells: '1003,1004,1005'
+    port: 31909
+  - name: client3
+    cells: '1006,1009,1010,10013'
+    port: 31910

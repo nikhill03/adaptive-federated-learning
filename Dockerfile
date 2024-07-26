@@ -1,12 +1,12 @@
-FROM python:3.9-slim-bookworm
-ENV FL_ROLE=client
-
-RUN mkdir -p /opt/oran
+FROM python:3.12-slim-bookworm
+ENV ROLE=client
+RUN mkdir -p /opt/oran/src/rapplib/
 WORKDIR /opt/oran
-COPY requirements.txt /opt/oran
 RUN apt update; apt install -y git vim curl;
+COPY requirements.txt /opt/oran/
 RUN python3 -m pip install -r requirements.txt
 
-COPY . /opt/oran
+COPY ./src/*.py /opt/oran/src/
+COPY ./src/rapplib/*.py /opt/oran/src/rapplib/
 
-CMD python3 /opt/oran/$FL_ROLE.py
+CMD python3 /opt/oran/src/main.py
