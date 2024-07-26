@@ -263,16 +263,18 @@ if __name__ == "__main__":
 
     logger.info(f'Running under mode {mode}')
 
-    cell_ids = os.getenv('CELL_IDS', []).split(',')
+    cell_ids = os.getenv('CELL_IDS')
 
-    if len(cell_ids) == 0 and mode == "client":
-        logger.error('Environment variable CELL_IDS is missing. Exit.')
-        sys.exit(1)
+    if mode == "client":
+        if cell_ids is None:
+            logger.error('Environment variable CELL_IDS is missing. Exit.')
+            sys.exit(1)
+        
+        logger.info(f'Collecting data from cells {cell_ids}')
+
+        cell_ids = cell_ids.split(',')
+        cell_ids = [int(c) for c in cell_ids]
     
-    logger.info(f'Collecting data from cells {cell_ids}')
-
-    cell_ids = [int(c) for c in cell_ids]
-
     aggregator_url = os.getenv("AGGREGATOR_SVC")
 
     if mode == "client" and aggregator_url is None:
