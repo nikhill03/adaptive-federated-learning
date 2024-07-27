@@ -243,10 +243,7 @@ async def rapp_handler():
 
 def main():
     if mode == "client":
-        import threading
-        thread1 = threading.Thread(target=fl_handler)
-        thread1.start()
-
+        fl_handler()
         asyncio.run(rapp_handler())
     elif mode == "aggregator":
         fl.server.start_server(server_address="0.0.0.0:51000",
