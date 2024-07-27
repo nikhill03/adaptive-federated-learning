@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-imageName: hoangtuansu/rapp_tp:0.5
+imageName: hoangtuansu/rapp_tp:0.6
 namespace: ets-admin
 bootstrap_url: http://10.180.113.114:8080
 clients:

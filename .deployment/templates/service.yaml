@@ -21,7 +21,7 @@ spec:
   ports:
     - name: {{ $key.name }}-svc
       protocol: TCP
-      port: 80
+      port: {{ $key.port }}
       nodePort: {{ $key.port }}
   selector:
     app.kubernetes.io/name: {{ $key.name }}
