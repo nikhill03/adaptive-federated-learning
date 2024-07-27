@@ -24,7 +24,7 @@ spec:
       port: {{ $key.port }}
       nodePort: {{ $key.port }}
   selector:
-    app.kubernetes.io/name: {{ $key.name }}
+    app: {{ $key.name }}
   type: NodePort
 ---
 {{- end}}
