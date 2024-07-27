@@ -19,7 +19,7 @@ pyproj
 scipy
 shapely
 aioresponses
-flwr[simulation]
+flwr[simulation]==1.10.0
 torch
 torchvision
 tqdm
