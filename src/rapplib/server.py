@@ -449,8 +449,6 @@ async def job_status(job_id: str, job_status: Dict):
     )
 
 
-@default_router.get('')
-
 class Server:
     """
     The server class provides all the members and
