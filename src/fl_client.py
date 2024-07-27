@@ -65,11 +65,7 @@ def test(net, testloader):
     return total_loss / len(testloader.dataset), None
 
 
-def load_csv_data(cell_ids):
-    raw_df = pd.read_csv('training_set.csv')    
-    df = raw_df[raw_df['du-id'].isin(cell_ids)]
-    df = df.drop(columns=constants.UNUSED_FEATURES, axis=1, errors='ignore')
-
+def load_data(df):
     # Split dataset into train, validation, and test sets
     train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
     train_df, val_df = train_test_split(train_df, test_size=0.2, random_state=42)

@@ -18,7 +18,7 @@ def main():
     cells = df['CELL_GLOBAL_ID'].unique().tolist()
     try:
         start_datetime = datetime.now()
-        increment = timedelta(seconds=30)
+        increment = timedelta(seconds=5)
 
         for cell in cells:
             n = df[df['CELL_GLOBAL_ID']==cell].shape[0]

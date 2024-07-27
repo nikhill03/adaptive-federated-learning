@@ -30,8 +30,6 @@ from rapplib import (
     metrics,
 )  # noqa: E402
 import pandas as pd
-import schedule
-from dataset import Dataset
 from utils import logger
 
 
@@ -41,7 +39,7 @@ MAX_FREQ_BAND = 102
 CM_PARAMETER_NAME = "freqBand"
 CMREAD_DIRECT = "cmread_direct"
 
-dataset = Dataset()
+pmhistory_data = pd.DataFrame({})
 db = None
 cp = None
 threshold = None
@@ -59,7 +57,11 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
         # These are the cells seen in the current loop only.
         self.unprocessed_cell_ids = set()
 
+        self.pm_data_by_job = pd.DataFrame({})
+
         super().__init__(stop_event, log, config)
+
+
 
     def pmhistory_data_handler(self, job_id, data_type, data):
         """
@@ -75,8 +77,7 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
                 }
             )
 
-            global dataset
-            dataset.augment_data(data)
+            self.pm_data_by_job = pd.concat([self.pm_data_by_job, pd.DataFrame([data])])
 
             self.config.counters_cells_values.labels(
                 **labels,
@@ -109,6 +110,28 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
                     job_id,
                 )
             self.processed_cell_ids.clear()
+
+            cell_by_ts_group = self.pm_data_by_job.groupby(['cell_global_id','epoch_timestamp_ms'])
+
+            for name, group in cell_by_ts_group:
+                cell_id, ts = name
+                data = {'cell_global_id': cell_id, 'epoch_timestamp_ms': ts}
+                
+                for _, r in group.iterrows():
+                    data[r['counter_name']] = r['counter_value']
+
+                self.log.debug(f'{data}')
+            
+            pmhistory_data = pd.concat([pmhistory_data, pd.DataFrame([data])]).drop_duplicates()
+
+            if len(pmhistory_data) >= 400:
+                self.log.info('Collect sufficient data for re-training')
+                trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
+                flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()
+
+                start_client(server_address=f'{aggregator_url}:51000', client=flwc)
+                
+                #pmhistory_data = pmhistory_data[0:0]
 
     def perform_cm_handling(self):
         """
@@ -225,15 +248,11 @@ class PmHistoryConsumer(rapp_base.RAppBase):
 
 
 def fl_handler():
-    trainloaders, testloader, input_dim = fl_client.load_csv_data(cell_ids)
+    trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
     flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()
 
     start_client(server_address=f'{aggregator_url}:51000', client=flwc)
-    '''
-    schedule.every(0.5).seconds.do(predict)
-    while True:
-        schedule.run_pending()
-    '''
+
 
 async def rapp_handler():
     pmhistory = PmHistoryConsumer(logger)
@@ -243,7 +262,6 @@ async def rapp_handler():
 
 def main():
     if mode == "client":
-        fl_handler()
         asyncio.run(rapp_handler())
     elif mode == "aggregator":
         fl.server.start_server(server_address="0.0.0.0:51000",
