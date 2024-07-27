@@ -122,6 +122,7 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
 
                 self.log.debug(f'{data}')
             
+            global pmhistory_data
             pmhistory_data = pd.concat([pmhistory_data, pd.DataFrame([data])]).drop_duplicates()
 
             if len(pmhistory_data) >= 400:
