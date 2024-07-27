@@ -8,5 +8,6 @@ RUN python3 -m pip install -r requirements.txt
 
 COPY ./src/*.py /opt/oran/src/
 COPY ./src/rapplib/*.py /opt/oran/src/rapplib/
+COPY ./src/training_set.csv /opt/oran/src/
 
 CMD python3 /opt/oran/src/main.py
