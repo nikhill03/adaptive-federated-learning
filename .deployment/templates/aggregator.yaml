@@ -19,4 +19,6 @@ spec:
           env:
             - name: ROLE
               value: aggregator
+            - name: NUMBER_ROUNDS
+              value: {{ .Values.aggregator.number_round }}
   serviceName: aggregator

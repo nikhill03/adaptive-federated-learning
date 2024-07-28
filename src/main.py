@@ -11,6 +11,8 @@ import flwr as fl
 from flwr.client import start_client
 import fl_client
 import sys
+import grpc
+import time
 os.environ["PROMETHEUS_MULTIPROC_DIR"] = tempfile.mkdtemp(prefix=str(os.getpid()))
 
 # we must set_start_method before import asyncio to get data processing to
@@ -112,30 +114,37 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
             self.processed_cell_ids.clear()
 
             try:
+                if self.pm_data_by_job.shape[0] == 0:
+                    self.log.info(f'No data received for job {job_id}.')
+                    return
+
                 global pmhistory_data
                 cell_by_ts_group = self.pm_data_by_job.groupby(['cell_global_id','epoch_timestamp_ms'])
 
                 for name, group in cell_by_ts_group:
-                    cell_id, _ = name
+                    cell_id, ts = name
                     data = {'cell_global_id': float(cell_id)}
                     
                     for _, r in group.iterrows():
                         data[r['counter_name']] = r['counter_value']
                 
-                    pmhistory_data = pd.concat([pmhistory_data, pd.DataFrame([data])]).drop_duplicates()
+                    pmhistory_data = pd.concat([pmhistory_data, pd.DataFrame([data])])
                 
                 if len(pmhistory_data) >= int(os.getenv('TRAINING_DATA_SIZE', 10)):
-                    self.log.info('Collect sufficient data for re-training')
+                    self.log.info(f'Collect sufficient data with {len(pmhistory_data)} records for re-training')
                     trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
                     flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()
-
                     start_client(server_address=f'{aggregator_url}:51000', client=flwc)
-                    
-                    #pmhistory_data = pmhistory_data[0:0]
+                    self.pm_data_by_job = self.pm_data_by_job[0:0]
+                    pmhistory_data = pmhistory_data[0:0]
+
+            except grpc.RpcError as rpc_error:
+                self.log.error(f'Issue when starting Flower client. Exiting in 5s. Details: {rpc_error}')
+                time.sleep(5)
+                sys.exit(1)
             except Exception as e:
                 self.log.exception(e)
             finally:
-                self.pm_data_by_job = self.pm_data_by_job[0:0]
                 self.log.info(f'Job {job_id}. Data count: {len(self.pm_data_by_job)}')
                 self.log.info(f'Data count from last training: {len(pmhistory_data)}')
 
@@ -270,9 +279,12 @@ def main():
     if mode == "client":
         asyncio.run(rapp_handler())
     elif mode == "aggregator":
-        fl.server.start_server(server_address="0.0.0.0:51000",
-                               config=fl.server.ServerConfig(num_rounds=3), 
-                               strategy=fl.server.strategy.FedAvg(),)
+        nbr_rounds = int(os.getenv('NUMBER_ROUNDS', 3))
+        while True:
+            fl.server.start_server(server_address="0.0.0.0:51000",
+                               config=fl.server.ServerConfig(num_rounds=nbr_rounds), 
+                               strategy=fl.server.strategy.FedAvg(),)        
+            logger.info('Complete a learning phase. Recreate server for another phase.')
 
 
 if __name__ == "__main__":

@@ -5,6 +5,8 @@
 imageName: hoangtuansu/rapp_tp:1.2
 namespace: ets-admin
 bootstrap_url: http://10.180.113.114:8080
+aggregator:
+  number_rounds: 1000
 clients:
   - name: client1
     cells: '1001'
