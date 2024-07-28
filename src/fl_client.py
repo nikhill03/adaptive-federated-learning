@@ -67,16 +67,12 @@ def test(net, testloader):
 
 def load_data(df):
     # Split dataset into train, validation, and test sets
-    train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
-    train_df, val_df = train_test_split(train_df, test_size=0.2, random_state=42)
+    _, test_df = train_test_split(df, test_size=0.2, random_state=42)
 
-    # Split train set into NUM_CLIENTS partitions
-    train_partitions = np.array_split(train_df, 1)
-
-    trainloaders = [DataLoader(CustomDataset(partition), batch_size=constants.BATCH_SIZE, shuffle=True) for partition in train_partitions]
+    trainloaders = DataLoader(CustomDataset(df), batch_size=constants.BATCH_SIZE, shuffle=True)
     testloader = DataLoader(CustomDataset(test_df), batch_size=constants.BATCH_SIZE, shuffle=False)
 
-    return trainloaders, testloader, train_df.shape[1] - 1  # Subtract 1 to exclude the target column from input dimensions
+    return trainloaders, testloader, df.shape[1] - 1  # Subtract 1 to exclude the target column from input dimensions
 
 
 class FlowerClient(NumPyClient):

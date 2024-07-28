@@ -1,6 +1,7 @@
 COUNTER_NAMES = [
     "RRU.PrbUsedDl", 
-    "DRB.UEThpDl", 
+    "DRB.UEThpDl",
+    "targetTput",
     "x", "y", 
     "RF.serving.RSRP", 
     "RF.serving.RSRQ", 

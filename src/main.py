@@ -111,28 +111,34 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
                 )
             self.processed_cell_ids.clear()
 
-            cell_by_ts_group = self.pm_data_by_job.groupby(['cell_global_id','epoch_timestamp_ms'])
+            try:
+                global pmhistory_data
+                cell_by_ts_group = self.pm_data_by_job.groupby(['cell_global_id','epoch_timestamp_ms'])
 
-            for name, group in cell_by_ts_group:
-                cell_id, ts = name
-                data = {'cell_global_id': cell_id, 'epoch_timestamp_ms': ts}
+                for name, group in cell_by_ts_group:
+                    cell_id, _ = name
+                    data = {'cell_global_id': cell_id}
+                    
+                    for _, r in group.iterrows():
+                        data[r['counter_name']] = r['counter_value']
                 
-                for _, r in group.iterrows():
-                    data[r['counter_name']] = r['counter_value']
-
-                self.log.debug(f'{data}')
-            
-            global pmhistory_data
-            pmhistory_data = pd.concat([pmhistory_data, pd.DataFrame([data])]).drop_duplicates()
-
-            if len(pmhistory_data) >= 400:
-                self.log.info('Collect sufficient data for re-training')
-                trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
-                flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()
-
-                start_client(server_address=f'{aggregator_url}:51000', client=flwc)
+                    pmhistory_data = pd.concat([pmhistory_data, pd.DataFrame([data])]).drop_duplicates()
                 
-                #pmhistory_data = pmhistory_data[0:0]
+
+                if len(pmhistory_data) >= 400:
+                    self.log.info('Collect sufficient data for re-training')
+                    trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
+                    flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()
+
+                    start_client(server_address=f'{aggregator_url}:51000', client=flwc)
+                    
+                    #pmhistory_data = pmhistory_data[0:0]
+            except Exception as e:
+                self.log.exception(e)
+            finally:
+                self.pm_data_by_job = self.pm_data_by_job[0:0]
+                self.log.info(f'Job {job_id}. Data count: {len(self.pm_data_by_job)}')
+                self.log.info(f'Data count from last training: {len(pmhistory_data)}')
 
     def perform_cm_handling(self):
         """
