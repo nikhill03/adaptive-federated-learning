@@ -117,15 +117,14 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
 
                 for name, group in cell_by_ts_group:
                     cell_id, _ = name
-                    data = {'cell_global_id': cell_id}
+                    data = {'cell_global_id': float(cell_id)}
                     
                     for _, r in group.iterrows():
                         data[r['counter_name']] = r['counter_value']
                 
                     pmhistory_data = pd.concat([pmhistory_data, pd.DataFrame([data])]).drop_duplicates()
                 
-
-                if len(pmhistory_data) >= 400:
+                if len(pmhistory_data) >= int(os.getenv('TRAINING_DATA_SIZE', 10)):
                     self.log.info('Collect sufficient data for re-training')
                     trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
                     flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()

@@ -28,6 +28,8 @@ spec:
               value: aggregator.{{ $.Values.namespace }}.svc
             - name: CELL_IDS
               value: '{{ $key.cells }}'
+            - name: TRAINING_DATA_SIZE
+              value: '{{ $key.data_size }}'
   serviceName: {{ $key.name }}
 ---
 {{- end}}

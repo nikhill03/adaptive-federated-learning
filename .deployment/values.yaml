@@ -2,19 +2,23 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-imageName: hoangtuansu/rapp_tp:1.0
+imageName: hoangtuansu/rapp_tp:1.2
 namespace: ets-admin
 bootstrap_url: http://10.180.113.114:8080
 clients:
   - name: client1
     cells: '1001'
     port: 31908
+    data_size: 1000
   - name: client2
     cells: '1002'
     port: 31909
+    data_size: 1000
   - name: client3
     cells: '1003'
     port: 31910
+    data_size: 400
   - name: client4
     cells: '1004'
     port: 31911
+    data_size: 500
