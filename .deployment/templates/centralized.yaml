@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: centralized
+  namespace: ets-admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: centralized
+  template:
+    metadata:
+      labels:
+        app: centralized
+    spec:
+      containers:
+        - name: centralized
+          image: "{{ .Values.imageName }}"
+          ports:
+            - name: http-server
+              containerPort: 31912
+              protocol: TCP
+          env:
+            - name: ROLE
+              value: centralized
+            - name: BOOTSTRAPPER_HREF
+              value: http://10.180.113.114:8080
+            - name: SELF_URL
+              value: http://10.180.113.115:31912
+            - name: AGGREGATOR_SVC
+              value: aggregator.ets-admin.svc
+            - name: CELL_IDS
+              value: 1001,1002,1003,1004
+  serviceName: centralized-svc

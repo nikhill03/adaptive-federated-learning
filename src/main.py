@@ -9,7 +9,7 @@ from typing import Dict
 from constants import COUNTER_NAMES, SERVICE_NAME
 import flwr as fl
 from flwr.client import start_client
-import fl_client
+import fl_server, fl_client, centralized
 import sys
 import grpc
 import time
@@ -45,7 +45,8 @@ pmhistory_data = pd.DataFrame({})
 db = None
 cp = None
 threshold = None
-
+mode = os.getenv("ROLE")
+cell_ids = None
 
 class PmHistoryConsumerProcessor(data_processor.DataProcessor):
     """
@@ -114,6 +115,7 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
             self.processed_cell_ids.clear()
 
             try:
+                self.log.info(f'Job {job_id}. Data count: {len(self.pm_data_by_job)}')
                 if self.pm_data_by_job.shape[0] == 0:
                     self.log.info(f'No data received for job {job_id}.')
                     return
@@ -122,7 +124,7 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
                 cell_by_ts_group = self.pm_data_by_job.groupby(['cell_global_id','epoch_timestamp_ms'])
 
                 for name, group in cell_by_ts_group:
-                    cell_id, ts = name
+                    cell_id, _ = name
                     data = {'cell_global_id': float(cell_id)}
                     
                     for _, r in group.iterrows():
@@ -132,9 +134,15 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
                 
                 if len(pmhistory_data) >= int(os.getenv('TRAINING_DATA_SIZE', 10)):
                     self.log.info(f'Collect sufficient data with {len(pmhistory_data)} records for re-training')
-                    trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
-                    flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()
-                    start_client(server_address=f'{aggregator_url}:51000', client=flwc)
+                    if mode != "centralized":
+                        self.log.info('Start flower client')
+                        trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
+                        flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()
+                        start_client(server_address=f'{aggregator_url}:51000', client=flwc)
+                    else:
+                        self.log.info('Start centralized agent')
+                        trainloaders, testloader = centralized.load_data(pmhistory_data)
+                        centralized.centrallized_training(trainloaders, testloader)
                     self.pm_data_by_job = self.pm_data_by_job[0:0]
                     pmhistory_data = pmhistory_data[0:0]
 
@@ -145,7 +153,6 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
             except Exception as e:
                 self.log.exception(e)
             finally:
-                self.log.info(f'Job {job_id}. Data count: {len(self.pm_data_by_job)}')
                 self.log.info(f'Data count from last training: {len(pmhistory_data)}')
 
     def perform_cm_handling(self):
@@ -244,8 +251,8 @@ class PmHistoryConsumer(rapp_base.RAppBase):
     service_version = "0.1.0"
     service_display_name = "PM Historical Python based Data Consumer"
     service_description = "Python rApp that consumes historical PM counter data"
-    job_frequency = 120
-    pm_data_window_start = 2
+    job_frequency = 300
+    pm_data_window_start = 20
     pmhistory_counter_names = COUNTER_NAMES
 
     # Overridding data_processor
@@ -262,13 +269,6 @@ class PmHistoryConsumer(rapp_base.RAppBase):
     )
 
 
-def fl_handler():
-    trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
-    flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()
-
-    start_client(server_address=f'{aggregator_url}:51000', client=flwc)
-
-
 async def rapp_handler():
     pmhistory = PmHistoryConsumer(logger)
     pmhistory.pmhistory_cell_ids = cell_ids
@@ -276,19 +276,18 @@ async def rapp_handler():
     logger.info('Started new RAPP session')
 
 def main():
-    if mode == "client":
+    if mode in ["client", "centralized"]:
         asyncio.run(rapp_handler())
     elif mode == "aggregator":
         nbr_rounds = int(os.getenv('NUMBER_ROUNDS', 3))
         while True:
             fl.server.start_server(server_address="0.0.0.0:51000",
-                               config=fl.server.ServerConfig(num_rounds=nbr_rounds), 
-                               strategy=fl.server.strategy.FedAvg(),)        
+                                   config=fl.server.ServerConfig(num_rounds=nbr_rounds),
+                                   strategy=fl_server.CustomStrategy())
             logger.info('Complete a learning phase. Recreate server for another phase.')
 
 
 if __name__ == "__main__":
-    mode = os.getenv("ROLE")
 
     if mode is None:
         logger.error('Environment variable MODE is missing. Exit.')
@@ -298,7 +297,7 @@ if __name__ == "__main__":
 
     cell_ids = os.getenv('CELL_IDS')
 
-    if mode == "client":
+    if mode in ["client", "centralized"]:
         if cell_ids is None:
             logger.error('Environment variable CELL_IDS is missing. Exit.')
             sys.exit(1)

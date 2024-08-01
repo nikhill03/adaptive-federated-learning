@@ -13,6 +13,8 @@ spec:
       labels:
         app: aggregator
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: master
       containers:
         - name: aggregator
           image: "{{ .Values.imageName }}"
@@ -20,5 +22,5 @@ spec:
             - name: ROLE
               value: aggregator
             - name: NUMBER_ROUNDS
-              value: {{ .Values.aggregator.number_round }}
+              value: '{{ .Values.aggregator.number_rounds }}'
   serviceName: aggregator

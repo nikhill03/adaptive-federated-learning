@@ -13,23 +13,24 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 def main():
-    df = pd.read_csv('pmhistory.csv', sep=',')
+    df = pd.read_csv('raw.csv', sep=',')
     df = df.drop(["nrCellIdentity", "nbCellIdentity_0", "nbCellIdentity_1", "nbCellIdentity_2", "nbCellIdentity_3", "nbCellIdentity_4", "ue-id"], axis=1, errors='ignore')
-    cells = df['CELL_GLOBAL_ID'].unique().tolist()
-    try:
-        start_datetime = datetime.now()
-        increment = timedelta(seconds=5)
+    cells = [1001, 1002, 1003, 1004]
+    
+    while True:
+        try:
+            sub_df = df[df['CELL_GLOBAL_ID'].isin(cells)]
+            start_datetime = datetime.now()
+            dt = start_datetime - timedelta(minutes=5)
+            sub_df.loc[:, 'DATETIME'] = dt
+                
+            sub_df.to_csv('pmhistory.csv', index=False)
+            print('Sleep 300s and create another dataset')
+            time.sleep(300)
+        except KeyboardInterrupt:
+            print("KeyboardInterrupt detected. Exiting gracefully...")
+            sys.exit(0)
 
-        for cell in cells:
-            n = df[df['CELL_GLOBAL_ID']==cell].shape[0]
-            datetime_list = [start_datetime + i * increment for i in range(n)]
-            cell_indices = df.index[df['CELL_GLOBAL_ID']==cell].tolist()
-            df.loc[cell_indices, 'DATETIME'] = datetime_list
-
-        df.to_csv('pmhistory.csv', index=False)
-    except KeyboardInterrupt:
-        print("KeyboardInterrupt detected. Exiting gracefully...")
-        sys.exit(0)
         
 if __name__ == "__main__":
     main()

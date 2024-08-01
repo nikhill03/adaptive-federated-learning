@@ -2,25 +2,29 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-imageName: hoangtuansu/rapp_tp:1.2
+imageName: hoangtuansu/rapp_tp:1.5
 namespace: ets-admin
 bootstrap_url: http://10.180.113.114:8080
 aggregator:
-  number_rounds: 1000
+  number_rounds: 5
 clients:
-  - name: client1
+  - name: mvno1
     cells: '1001'
     port: 31908
     data_size: 1000
-  - name: client2
+    location: node1
+  - name: mvno2
     cells: '1002'
     port: 31909
     data_size: 1000
-  - name: client3
+    location: node1
+  - name: mvno3
     cells: '1003'
     port: 31910
     data_size: 400
-  - name: client4
+    location: worker01
+  - name: mvno4
     cells: '1004'
     port: 31911
     data_size: 500
+    location: worker01

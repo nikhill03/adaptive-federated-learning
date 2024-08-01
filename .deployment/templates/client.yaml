@@ -14,6 +14,8 @@ spec:
       labels:
         app: {{ $key.name }}
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ $key.location }}
       containers:
         - name: {{ $key.name }}
           image: '{{ $.Values.imageName }}'
