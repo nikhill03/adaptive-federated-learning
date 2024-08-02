@@ -136,9 +136,11 @@ class PmHistoryConsumerProcessor(data_processor.DataProcessor):
                     self.log.info(f'Collect sufficient data with {len(pmhistory_data)} records for re-training')
                     if mode != "centralized":
                         self.log.info('Start flower client')
-                        trainloaders, testloader, input_dim = fl_client.load_data(pmhistory_data)
-                        flwc = fl_client.FlowerClient(trainloaders, testloader, input_dim).to_client()
-                        start_client(server_address=f'{aggregator_url}:51000', client=flwc)
+                        trainloaders, testloader = fl_client.load_data(pmhistory_data)
+
+                        client = fl_client.FlowerClient(trainloaders, testloader).to_client()
+                        start_client(server_address=f'{aggregator_url}:51000', client=client)
+
                     else:
                         self.log.info('Start centralized agent')
                         trainloaders, testloader = centralized.load_data(pmhistory_data)

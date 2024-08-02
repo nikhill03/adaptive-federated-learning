@@ -11,6 +11,22 @@ spec:
   selector:
     app: aggregator
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: centralized-svc
+  namespace: ets-admin
+spec:
+  ports:
+    - name: centralized-svc
+      protocol: TCP
+      port: 31912
+      targetPort: 31912
+      nodePort: 31912
+  selector:
+    app: centralized
+  type: NodePort
+---
 {{- range $key := .Values.clients }}
 apiVersion: v1
 kind: Service
