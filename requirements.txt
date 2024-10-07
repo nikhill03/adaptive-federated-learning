@@ -19,7 +19,9 @@ pyproj
 scipy
 shapely
 aioresponses
-flwr[simulation]==1.10.0
+flwr
 torch
 torchvision
 tqdm
+mlflow
+influxdb-client
