@@ -1,0 +1,37 @@
+{{- range $key := .Values.clients }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $key.name }}
+  namespace: {{ $.Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $key.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $key.name }}
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ $key.location }}
+      containers:
+        - name: {{ $key.name }}
+          image: '{{ $.Values.imageName }}'
+          env:
+            - name: ROLE
+              value: client
+            - name: BOOTSTRAPPER_HREF
+              value: {{ $.Values.bootstrap_url }}
+            - name: SELF_URL
+              value: http://10.180.113.115:{{ $key.port }}
+            - name: AGGREGATOR_SVC
+              value: aggregator.{{ $.Values.namespace }}.svc
+            - name: CELL_IDS
+              value: '{{ $key.cells }}'
+            - name: TRAINING_DATA_SIZE
+              value: '{{ $key.data_size }}'
+  serviceName: {{ $key.name }}
+---
+{{- end}}

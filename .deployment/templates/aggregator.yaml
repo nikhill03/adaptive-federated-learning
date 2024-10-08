@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aggregator
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aggregator
+  template:
+    metadata:
+      labels:
+        app: aggregator
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: master
+      containers:
+        - name: aggregator
+          image: "{{ .Values.imageName }}"
+          env:
+            - name: ROLE
+              value: aggregator
+            - name: NUMBER_ROUNDS
+              value: '{{ .Values.aggregator.number_rounds }}'
+  serviceName: aggregator

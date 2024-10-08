@@ -1,0 +1,33 @@
+version: '3'
+services:
+  ingester:
+    build:
+      context: .
+      dockerfile: ingest.Dockerfile
+    image: hoangtuansu/ingester:0.1
+  fl_client:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+      args:
+        - COMPONENT_IMAGE_VERSION=${COMPONENT_IMAGE_VERSION}
+    image: hoangtuansu/fl_client:0.1
+  fl_server:
+    build:
+      context: .
+      dockerfile: server.Dockerfile
+      args:
+        - COMPONENT_IMAGE_VERSION=${COMPONENT_IMAGE_VERSION}
+    image: hoangtuansu/fl_server:0.1
+  model_serving:
+    build:
+      context: .
+      dockerfile: serving.Dockerfile
+    image: hoangtuansu/model-serve:0.1
+  dagger:
+    build:
+      context: .
+      dockerfile: dags.Dockerfile
+      args:
+        - COMPONENT_IMAGE_VERSION=${COMPONENT_IMAGE_VERSION}
+    image: hoangtuansu/ad_dag:0.1

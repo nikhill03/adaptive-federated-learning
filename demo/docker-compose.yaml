@@ -1,0 +1,22 @@
+version: '3'
+services:
+  ue:
+    build:
+      context: .
+      dockerfile: ue.Dockerfile
+    image: hoangtuansu/demo_ue:0.1
+  bs:
+    build:
+      context: .
+      dockerfile: bs.Dockerfile
+    image: hoangtuansu/demo_bs:0.1
+  xapp:
+    build:
+      context: .
+      dockerfile: xapp.Dockerfile
+    image: hoangtuansu/demo_xapp:0.1
+  rapp:
+    build:
+      context: .
+      dockerfile: rapp.Dockerfile
+    image: hoangtuansu/demo_rapp:0.1
