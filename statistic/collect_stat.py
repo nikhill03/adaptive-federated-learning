@@ -53,7 +53,7 @@ class CollectStatistics:
     def collect_stat_end_local_round(self, case, tau, it_each_local, it_each_global, control_alg, model, train_image,
                                      train_label, test_image, test_label, w_global, total_time_recomputed):
 
-        self.taus.append(tau)  # Use calculated tau
+        self.taus.append(tau)  
         self.each_locals.append(it_each_local)
         self.each_globals.append(it_each_global)
 
@@ -76,8 +76,7 @@ class CollectStatistics:
                     self.rho_adapts.append(np.nan)
 
         else:
-            if self.is_single_run:  # When doing a single run, the array needs to align with the timestamp,
-                                    # thus adding an entry on None
+            if self.is_single_run:  
                 self.beta_adapts.append(np.nan)
                 self.delta_adapts.append(np.nan)
                 self.rho_adapts.append(np.nan)

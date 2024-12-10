@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 import abc
 
-LOSS_ACC_BATCH_SIZE = 100  # When computing loss and accuracy, use blocks of LOSS_ACC_BATCH_SIZE
+LOSS_ACC_BATCH_SIZE = 100  
 
 
 class ModelCNNAbstract(abc.ABC):
@@ -15,7 +15,6 @@ class ModelCNNAbstract(abc.ABC):
 
     @abc.abstractmethod
     def create_graph(self, learning_rate=None):
-        # The below variables need to be defined in the child class
         self.all_weights = None
         self.x = None
         self.y_ = None
@@ -30,11 +29,11 @@ class ModelCNNAbstract(abc.ABC):
         self._optimizer_init(learning_rate=learning_rate)
         self.grad = None
 
-        self.session = None  # Used for consecutive training
+        self.session = None  
 
     def _optimizer_init(self, learning_rate=None):
         if learning_rate is None:
-            learning_rate = 0.0   # The learning rate should not have effect when not using optimizer
+            learning_rate = 0.0  
         self.learning_rate = learning_rate
         self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
         self.optimizer_op = self.optimizer.minimize(self.cross_entropy)
@@ -73,11 +72,10 @@ class ModelCNNAbstract(abc.ABC):
             raise Exception('Graph is not created. Call create_graph() first.')
 
         if rand_seed is not None:
-            # Random seed only works at graph initialization, so recreate graph here
             self.session.close()
             tf.reset_default_graph()
             tf.set_random_seed(rand_seed)
-            self.create_graph(learning_rate=self.learning_rate)  # This creates the session as well
+            self.create_graph(learning_rate=self.learning_rate)  
 
         self.session.run(self.init)
 
@@ -200,4 +198,4 @@ class ModelCNNAbstract(abc.ABC):
 
         self.assign_flattened_weight(self.session, w)
         pred = self.session.run(self.y, feed_dict={self.x: [img]})
-        return pred[0]   # self.y gives an array of predictions
+        return pred[0]  

@@ -1,18 +1,22 @@
 import socket
 import time
 import struct
-
-from control_algorithm.adaptive_tau import ControlAlgAdaptiveTauClient, ControlAlgAdaptiveTauServer
+from control_algorithm.adaptive_tau import ControlAlgAdaptiveTauClient
 from data_reader.data_reader import get_data, get_data_train_samples
 from models.get_model import get_model
 from util.sampling import MinibatchSampling
 from util.utils import send_msg, recv_msg
+from config import SERVER_ADDR_PRIMARY, SERVER_PORT_PRIMARY, SERVER_ADDR_SECONDARY, SERVER_PORT_SECONDARY, dataset_file_path
 
-# Configurations are in a separate config.py file
-from config import SERVER_ADDR, SERVER_PORT, dataset_file_path
+# Configuration to determine which server to connect to
+connect_to_primary = True  # Set to False for connecting to the secondary server
 
+server_address = (SERVER_ADDR_PRIMARY, SERVER_PORT_PRIMARY) if connect_to_primary else (SERVER_ADDR_SECONDARY, SERVER_PORT_SECONDARY)
+
+# Connect to the appropriate server
 sock = socket.socket()
-sock.connect((SERVER_ADDR, SERVER_PORT))
+sock.connect(server_address)
+print(f"Connected to {'primary' if connect_to_primary else 'secondary'} server at {server_address}")
 
 print('---------------------------------------------------------------------------')
 
@@ -22,9 +26,8 @@ sim_prev = None
 
 try:
     while True:
+        # Receive initialization message from server
         msg = recv_msg(sock, 'MSG_INIT_SERVER_TO_CLIENT')
-        # ['MSG_INIT_SERVER_TO_CLIENT', model_name, dataset, num_iterations_with_same_minibatch_for_tau_equals_one, step_size, batch_size,
-        # total_data, use_control_alg, indices_this_node, read_all_data_for_stochastic, use_min_loss, sim]
 
         model_name = msg[1]
         dataset = msg[2]
@@ -38,16 +41,16 @@ try:
         use_min_loss = msg[10]
         sim = msg[11]
 
+        # Initialize the model
         model = get_model(model_name)
-        model2 = get_model(model_name)   # Used for computing loss_w_prev_min_loss for stochastic gradient descent,
-                                         # so that the state of model can be still used by control algorithm later.
+        model2 = get_model(model_name)  
 
         if hasattr(model, 'create_graph'):
             model.create_graph(learning_rate=step_size)
         if hasattr(model2, 'create_graph'):
             model2.create_graph(learning_rate=step_size)
 
-        # Assume the dataset does not change
+        # Load dataset
         if read_all_data_for_stochastic or batch_size >= total_data:
             if batch_size_prev != batch_size or total_data_prev != total_data or (batch_size >= total_data and sim_prev != sim):
                 print('Reading all data samples used in training...')
@@ -62,12 +65,12 @@ try:
             train_indices = indices_this_node
         else:
             sampler = MinibatchSampling(indices_this_node, batch_size, sim)
-            train_indices = None  # To be defined later
+            train_indices = None 
         last_batch_read_count = None
 
         data_size_local = len(indices_this_node)
 
-        if isinstance(control_alg_server_instance, ControlAlgAdaptiveTauServer):
+        if isinstance(control_alg_server_instance, ControlAlgAdaptiveTauClient):
             control_alg = ControlAlgAdaptiveTauClient()
         else:
             control_alg = None
@@ -76,14 +79,15 @@ try:
         w_last_global = None
         total_iterations = 0
 
+        # Notify server that data preparation is complete
         msg = ['MSG_DATA_PREP_FINISHED_CLIENT_TO_SERVER']
         send_msg(sock, msg)
 
         while True:
             print('---------------------------------------------------------------------------')
 
+            # Receive weights and configuration from server
             msg = recv_msg(sock, 'MSG_WEIGHT_TAU_SERVER_TO_CLIENT')
-            # ['MSG_WEIGHT_TAU_SERVER_TO_CLIENT', w_global, tau, is_last_round, prev_loss_is_min]
             w = msg[1]
             tau_config = msg[2]
             is_last_round = msg[3]
@@ -95,27 +99,17 @@ try:
             if control_alg is not None:
                 control_alg.init_new_round(w)
 
-            time_local_start = time.time()  #Only count this part as time for local iteration because the remaining part does not increase with tau
+            time_local_start = time.time()  
 
-            # Perform local iteration
             grad = None
-            loss_last_global = None   # Only the loss at starting time is from global model parameter
+            loss_last_global = None  
             loss_w_prev_min_loss = None
 
             tau_actual = 0
 
             for i in range(0, tau_config):
 
-                # When batch size is smaller than total data, read the data here; else read data during client init above
                 if batch_size < total_data:
-                    # When using the control algorithm, we want to make sure that the batch in the last local iteration
-                    # in the previous round and the first iteration in the current round is the same,
-                    # because the local and global parameters are used to
-                    # estimate parameters used for the adaptive tau control algorithm.
-                    # Therefore, we only change the data in minibatch when (i != 0) or (sample_indices is None).
-                    # The last condition with tau <= 1 is to make sure that the batch will change when tau = 1,
-                    # this may add noise in the parameter estimation for the control algorithm,
-                    # and the amount of noise would be related to NUM_ITERATIONS_WITH_SAME_MINIBATCH.
 
                     if (not isinstance(control_alg, ControlAlgAdaptiveTauClient)) or (i != 0) or (train_indices is None) \
                             or (tau_config <= 1 and
@@ -138,12 +132,9 @@ try:
 
                 if i == 0:
                     try:
-                        # Note: This has to follow the gradient computation line above
                         loss_last_global = model.loss_from_prev_gradient_computation()
                         print('*** Loss computed from previous gradient computation')
                     except:
-                        # Will get an exception if the model does not support computing loss
-                        # from previous gradient computation
                         loss_last_global = model.loss(train_image, train_label, w, train_indices)
                         print('*** Loss computed from data')
 
@@ -151,7 +142,6 @@ try:
 
                     if use_min_loss:
                         if (batch_size < total_data) and (w_prev_min_loss is not None):
-                            # Compute loss on w_prev_min_loss so that the batch remains the same
                             loss_w_prev_min_loss = model2.loss(train_image, train_label, w_prev_min_loss, train_indices)
 
                 w = w - step_size * grad
@@ -165,7 +155,6 @@ try:
                     if is_last_local:
                         break
 
-            # Local operation finished, global aggregation starts
             time_local_end = time.time()
             time_all_local = time_local_end - time_local_start
             print('time_all_local =', time_all_local)
@@ -174,6 +163,7 @@ try:
                 control_alg.update_after_all_local(model, train_image, train_label, train_indices,
                                                    w, w_last_global, loss_last_global)
 
+            # Send updated weights, time, and other stats to the server
             msg = ['MSG_WEIGHT_TIME_SIZE_CLIENT_TO_SERVER', w, time_all_local, tau_actual, data_size_local,
                    loss_last_global, loss_w_prev_min_loss]
             send_msg(sock, msg)

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400">
+  <!-- Title -->
+  <text x="300" y="30" text-anchor="middle" font-size="20" font-weight="bold">MNIST CNN Model Architecture</text>
+
+  <!-- Layer Boxes -->
+  <rect x="50" y="70" width="120" height="50" fill="#f0f0f0" stroke="#000" />
+  <text x="110" y="90" text-anchor="middle" font-size="10">Input</text>
+  <text x="110" y="110" text-anchor="middle">28x28x1 Image</text>
+
+  <rect x="50" y="150" width="120" height="50" fill="#e6f2ff" stroke="#000" />
+  <text x="110" y="170" text-anchor="middle">Conv Layer 1</text>
+  <text x="110" y="190" text-anchor="middle" font-size="10">[5x5, 1→32] + ReLU</text>
+
+  <rect x="50" y="230" width="120" height="50" fill="#cce5ff" stroke="#000" />
+  <text x="110" y="250" text-anchor="middle">Max Pooling 1</text>
+  <text x="110" y="270" text-anchor="middle" font-size="10">[2x2, stride=2]</text>
+
+  <rect x="50" y="310" width="120" height="50" fill="#b3d9ff" stroke="#000" />
+  <text x="110" y="330" text-anchor="middle">LRN Layer 1</text>
+  <text x="110" y="350" text-anchor="middle" font-size="10">[depth_radius=4]</text>
+
+  <rect x="200" y="150" width="120" height="50" fill="#e6f2ff" stroke="#000" />
+  <text x="260" y="170" text-anchor="middle">Conv Layer 2</text>
+  <text x="260" y="190" text-anchor="middle" font-size="10">[5x5, 32→32] + ReLU</text>
+
+  <rect x="200" y="230" width="120" height="50" fill="#cce5ff" stroke="#000" />
+  <text x="260" y="250" text-anchor="middle">Max Pooling 2</text>
+  <text x="260" y="270" text-anchor="middle" font-size="10">[2x2, stride=2]</text>
+
+  <rect x="200" y="310" width="120" height="50" fill="#b3d9ff" stroke="#000" />
+  <text x="260" y="330" text-anchor="middle">LRN Layer 2</text>
+  <text x="260" y="350" text-anchor="middle" font-size="10">[depth_radius=4]</text>
+
+  <rect x="350" y="200" width="120" height="50" fill="#99ccff" stroke="#000" />
+  <text x="410" y="220" text-anchor="middle">Fully Connected</text>
+  <text x="410" y="240" text-anchor="middle" font-size="10">[7x7x32 → 256] + ReLU</text>
+
+  <rect x="500" y="200" width="120" height="50" fill="#80bfff" stroke="#000" />
+  <text x="560" y="220" text-anchor="middle">Output Layer</text>
+  <text x="560" y="240" text-anchor="middle" font-size="10">[Softmax, 10 classes]</text>
+
+  <!-- Arrows -->
+  <path d="M110,120 L110,150" fill="none" stroke="#000" marker-end="url(#arrowhead)" />
+  <path d="M110,200 L110,230" fill="none" stroke="#000" marker-end="url(#arrowhead)" />
+  <path d="M110,280 L110,310" fill="none" stroke="#000" marker-end="url(#arrowhead)" />
+  
+  <path d="M260,200 L260,230" fill="none" stroke="#000" marker-end="url(#arrowhead)" />
+  <path d="M260,280 L260,310" fill="none" stroke="#000" marker-end="url(#arrowhead)" />
+  
+  <path d="M350,225 L200,225" fill="none" stroke="#000" marker-end="url(#arrowhead)" />
+  <path d="M470,225 L500,225" fill="none" stroke="#000" marker-end="url(#arrowhead)" />
+
+  <!-- Arrowhead marker -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#000" />
+    </marker>
+  </defs>
+</svg>

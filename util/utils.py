@@ -62,17 +62,14 @@ def get_indices_each_node_case(n_nodes, maxCase, label_list):
         for j in range(0, maxCase):
             indices_each_node_case[j].append([])
 
-    # indices_each_node_case is a big list that contains N-number of sublists. Sublist n contains the indices that should be assigned to node n
 
     min_label = min(label_list)
     max_label = max(label_list)
     num_labels = max_label - min_label + 1
 
     for i in range(0, len(label_list)):
-        # case 1
         indices_each_node_case[0][(i % n_nodes)].append(i)
 
-        # case 2
         tmp_target_node = int((label_list[i] - min_label) % n_nodes)
         if n_nodes > num_labels:
             tmp_min_index = 0
@@ -84,11 +81,9 @@ def get_indices_each_node_case(n_nodes, maxCase, label_list):
             tmp_target_node = tmp_min_index
         indices_each_node_case[1][tmp_target_node].append(i)
 
-        # case 3
         for n in range(0, n_nodes):
             indices_each_node_case[2][n].append(i)
 
-        # case 4
         tmp = int(np.ceil(min(n_nodes, num_labels) / 2))
         if label_list[i] < (min_label + max_label) / 2:
             tmp_target_node = i % tmp

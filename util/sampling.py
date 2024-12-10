@@ -10,7 +10,7 @@ class MinibatchSampling:
             raise Exception('Length of array is smaller than batch size. len(array): ' + str(len(array))
                             + ', batch size: ' + str(batch_size))
 
-        self.array = copy.deepcopy(array)   # So that the original array won't be changed
+        self.array = copy.deepcopy(array) 
         self.batch_size = batch_size
         self.start_index = 0
 
